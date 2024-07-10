@@ -1,4 +1,4 @@
-const request = require('request');
+const axios = require('axios');
 const sinon = require('sinon');
 const client = require('../../lib/index')({ token: 'abc123', accountId: 9999999 });
 
@@ -96,12 +96,12 @@ describe('Subscribers with callback', () => {
     };
 
     beforeEach(() => {
-      sinon.stub(request, 'post')
-        .yields(null, { statusCode: 201 }, {});
+      sinon.stub(axios, 'post')
+        .resolves({ status: 201, data: {} });
     });
 
     afterEach(() => {
-      request.post.restore();
+      axios.post.restore();
     });
 
     it('should post batches of subscribers and call request with post', (done) => {
@@ -110,10 +110,10 @@ describe('Subscribers with callback', () => {
       client.updateBatchSubscribers(payload, (errors, responses, bodies) => {
         expect(errors).toBe(null);
         expect(responses.length).toBe(2);
-        expect(responses[0].statusCode).toBe(201);
-        expect(responses[1].statusCode).toBe(201);
+        expect(responses[0].status).toBe(201);
+        expect(responses[1].status).toBe(201);
         expect(bodies).toEqual([{}, {}]);
-        expect(request.post.callCount).toBe(2);
+        expect(axios.post.callCount).toBe(2);
       });
       done();
     });
@@ -127,41 +127,39 @@ describe('Subscribers with callback', () => {
     };
 
     beforeEach(() => {
-      sinon.stub(request, 'post')
-        .yields(null, { statusCode: 201 }, {});
-      spyOn(request, 'post').and.callThrough();
+      sinon.stub(axios, 'post')
+        .resolves({ status: 201, data: {} });
     });
 
     afterEach(() => {
-      request.post.restore();
+      axios.post.restore();
     });
 
     it('should set the correct request URL', (done) => {
       client.updateBatchSubscribers(payload, (errors, responses, bodies) => {
         expect(errors).toBe(null);
         expect(responses.length).toBe(1);
-        expect(responses[0].statusCode).toBe(201);
+        expect(responses[0].status).toBe(201);
         expect(bodies).toEqual([{}]);
       });
       done();
 
-      expect(request.post).toHaveBeenCalledWith({
-        url: 'https://api.getdrip.com/v2/9999999/subscribers/batches',
-        headers: client.requestHeaders(),
-        json: true,
-        body: {
+      expect(axios.post).toHaveBeenCalledWith(
+        'https://api.getdrip.com/v2/9999999/subscribers/batches',
+        {
           batches: [{
             subscribers: [undefined]
           }]
-        }
-      }, jasmine.any(Function));
+        },
+        { headers: client.requestHeaders() }
+      );
     });
   });
 
   describe('Subscribers with promise', () => {
     const expectedResponse = {
-      statusCode: 200,
-      body: {
+      status: 200,
+      data: {
         subscribers: [{}]
       }
     };
@@ -186,7 +184,7 @@ describe('Subscribers with callback', () => {
 
       client.listSubscribers({})
         .then((response) => {
-          expect(response.statusCode).toBe(200);
+          expect(response.status).toBe(200);
           expect(client.request.callCount).toBe(1);
         })
         .catch(failTest);
@@ -200,7 +198,7 @@ describe('Subscribers with callback', () => {
 
       client.createUpdateSubscriber({ test_field: 'value' })
         .then((response) => {
-          expect(response.statusCode).toBe(200);
+          expect(response.status).toBe(200);
           expect(client.request.callCount).toBe(1);
         })
         .catch(failTest);
@@ -214,7 +212,7 @@ describe('Subscribers with callback', () => {
 
       client.unsubscribeBatchSubscribers(batchPayload)
         .then((response) => {
-          expect(response.statusCode).toBe(200);
+          expect(response.status).toBe(200);
           expect(client.request.callCount).toBe(1);
         })
         .catch(failTest);
@@ -228,7 +226,7 @@ describe('Subscribers with callback', () => {
 
       client.fetchSubscriber(email)
         .then((response) => {
-          expect(response.statusCode).toBe(200);
+          expect(response.status).toBe(200);
           expect(client.request.callCount).toBe(1);
         })
         .catch(failTest);
@@ -242,7 +240,7 @@ describe('Subscribers with callback', () => {
 
       client.unsubscribeFromCampaign(email, campaignId)
         .then((response) => {
-          expect(response.statusCode).toBe(200);
+          expect(response.status).toBe(200);
           expect(client.request.callCount).toBe(1);
         })
         .catch(failTest);
@@ -256,7 +254,7 @@ describe('Subscribers with callback', () => {
 
       client.unsubscribeFromAllMailings(email)
         .then((response) => {
-          expect(response.statusCode).toBe(200);
+          expect(response.status).toBe(200);
           expect(client.request.callCount).toBe(1);
         })
         .catch(failTest);
@@ -270,7 +268,7 @@ describe('Subscribers with callback', () => {
 
       client.deleteSubscriber(email)
         .then((response) => {
-          expect(response.statusCode).toBe(200);
+          expect(response.status).toBe(200);
           expect(client.request.callCount).toBe(1);
         })
         .catch(failTest);
